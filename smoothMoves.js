@@ -3,10 +3,12 @@
 var canvas;
 var gl;
 var program; 
+var vPosition;
 
 ///////////////////////////////////////////////////////////
 //Buffer Array
 //////////////////////////////////////////////////////////
+// Sphere
 var pointsArray = [[],[],[],[],[],[]];
 var normalsArray = [[],[],[],[],[],[]];
 var nBufferArray = [];
@@ -47,9 +49,10 @@ var normalMatrix, normalMatrixLoc;
 //////////////////////////////////////////////////
 // Make Cube
 //////////////////////////////////////////////////
-//var pointsArray = [];
-//var colorsArray = [];
+var cupointsArray = [];
+var colorsArray = [];
 var numVertices  = 36;
+var vBuffer1;
 
 var vertices = [
     vec4( -0.5, -0.5,  0.5, 1.0 ),
@@ -63,22 +66,22 @@ var vertices = [
 ];
 
 function quad(a, b, c, d, texarray, texcord) {
-     pointsArray.push(vertices[a]); 
+     cupointsArray.push(vertices[a]); 
      texarray.push(texcord[0]);
 
-     pointsArray.push(vertices[b]); 
+     cupointsArray.push(vertices[b]); 
      texarray.push(texcord[1]); 
 
-     pointsArray.push(vertices[c]); 
+     cupointsArray.push(vertices[c]); 
      texarray.push(texcord[2]); 
    
-     pointsArray.push(vertices[a]); 
+     cupointsArray.push(vertices[a]); 
      texarray.push(texcord[0]); 
 
-     pointsArray.push(vertices[c]); 
+     cupointsArray.push(vertices[c]); 
      texarray.push(texcord[2]); 
 
-     pointsArray.push(vertices[d]); 
+     cupointsArray.push(vertices[d]); 
      texarray.push(texcord[3]);   
 }
 
@@ -136,25 +139,6 @@ function configureTexturetri(n) {
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 }
 
-// Nearest Neighbor mapping
-function configureTexturenear(n) {
-    texture[n] = gl.createTexture();
-    gl.bindTexture( gl.TEXTURE_2D, texture[n] );
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image[n] );
-    gl.generateMipmap( gl.TEXTURE_2D );
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-    
-    gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
-}
-
-// call to switch textures
-function enableTexture (n) {
-  gl.bindTexture( gl.TEXTURE_2D, texture[n] );
-  gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image[n] );
-}
-
 /////////////////////////////////////////////////////////
 //Lighting 
 ////////////////////////////////////////////////////////////////
@@ -186,29 +170,8 @@ var materialshin =[
 ];
 
 // Function takes care of the lighting effects for each planet as well as binding the buffers to the shaders
-function bindandlighting(j) {
-    gl.bindBuffer( gl.ARRAY_BUFFER, nBufferArray[j]);
-    vNormal = gl.getAttribLocation( program, "vNormal" );
-    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vNormal);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferArray[j]);
-    vPosition = gl.getAttribLocation( program, "vPosition");
-    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-    
-    ambientProduct = mult(lightAmbient, materialamb[j]);
-    diffuseProduct = mult(lightDiffuse, materialdif[j]);
-    specularProduct = mult(lightSpecular, materialspec[j]);
-    gl.uniform4fv( gl.getUniformLocation(program, "ambientProduct"),flatten(ambientProduct) );
-    gl.uniform4fv( gl.getUniformLocation(program, "diffuseProduct"),flatten(diffuseProduct) );
-    gl.uniform4fv( gl.getUniformLocation(program, "specularProduct"),flatten(specularProduct) );   
-    gl.uniform4fv( gl.getUniformLocation(program, "lightPosition"),flatten(lightPosition) );
-    gl.uniform1f( gl.getUniformLocation(program, "shininess"),materialshin[j] );
         
-}
-
-
 
 /////////////////////////////////////////////////////////////////////////////////////
 //Size and Location Helpers
@@ -258,8 +221,6 @@ var rotateadd = [
 ///////////////////////////////////////////////////////////////////////////////
 //Sphere Generation
 /////////////////////////////////////////////////////////////////////////////////
-
-
 var va = vec4(0.0, 0.0, -1.0,1);
 var vb = vec4(0.0, 0.942809, 0.333333, 1);
 var vc = vec4(-0.816497, -0.471405, 0.333333, 1);
@@ -345,6 +306,58 @@ var tetraorder = [
  // //   tetrahedron(va, vb, vc, vd, 1, 0, 5)         //MOON - dont need. just use another planets sphere
 ];
 
+////////////////////////////////////////////////////////////////////////////////////
+//FOR CUBES
+function enableCube (t_Buffer, v_Buffer, n) {
+// (texture coordinates, vertex coordinates, n for texture/image 
+    // tell shaders it is a cube
+    gl.uniform1i( gl.getUniformLocation(program, "firstv"), 1 );
+    gl.uniform1i( gl.getUniformLocation(program, "firstf"), 1 );
+    // bind the texture coordinates
+    gl.bindBuffer( gl.ARRAY_BUFFER, t_Buffer);
+    vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
+    gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vTexCoord );
+    // bind the vertex coordinates
+    gl.bindBuffer( gl.ARRAY_BUFFER, v_Buffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(cupointsArray), gl.STATIC_DRAW );
+    vPosition = gl.getAttribLocation( program, "vPosition" );
+    gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vPosition ); 
+    // bind texture image
+    gl.bindTexture( gl.TEXTURE_2D, texture[n]);
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image[n] );
+}
+// FOR SPHERES
+function bindandlighting(j) {
+    //tell shader it is a sphere
+    gl.uniform1i( gl.getUniformLocation(program, "firstv"), 0 );
+    gl.uniform1i( gl.getUniformLocation(program, "firstf"), 0 );
+    // tell shader to not pass texture coordinates
+    gl.disableVertexAttribArray( vTexCoord );
+
+    // bind the normal coordinates
+    gl.bindBuffer( gl.ARRAY_BUFFER, nBufferArray[j]);
+    vNormal = gl.getAttribLocation( program, "vNormal" );
+    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vNormal);
+    // bind the vertex coordinates
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferArray[j]);
+    vPosition = gl.getAttribLocation( program, "vPosition");
+    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+    // math for lighting 
+    ambientProduct = mult(lightAmbient, materialamb[j]);
+    diffuseProduct = mult(lightDiffuse, materialdif[j]);
+    specularProduct = mult(lightSpecular, materialspec[j]);
+    // pass lighting params to shader
+    gl.uniform4fv( gl.getUniformLocation(program, "ambientProduct"),flatten(ambientProduct) );
+    gl.uniform4fv( gl.getUniformLocation(program, "diffuseProduct"),flatten(diffuseProduct) );
+    gl.uniform4fv( gl.getUniformLocation(program, "specularProduct"),flatten(specularProduct) );   
+    gl.uniform4fv( gl.getUniformLocation(program, "lightPosition"),flatten(lightPosition) );
+    gl.uniform1f( gl.getUniformLocation(program, "shininess"),materialshin[j] );
+        
+}
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
@@ -372,6 +385,39 @@ window.onload = function init() {
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
+
+////////////////////////////////////////////////////////////////////////////
+// Cube Buffer Data
+///////////////////////////////////////////////////////////////////////////
+    colorCube(texCoordsArray[0], texCoord);
+    colorCube(texCoordsArray[1], texCoord2);
+
+    vBuffer1 = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer1 );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(cupointsArray), gl.STATIC_DRAW );
+    
+    vPosition = gl.getAttribLocation( program, "vPosition" );
+    gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vPosition );
+
+    for (var m = 0; m < 2 ; m++){
+        tBuffer[m] = gl.createBuffer();
+        gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer[m] );
+        gl.bufferData( gl.ARRAY_BUFFER, flatten(texCoordsArray[m]), gl.STATIC_DRAW );
+    }
+    
+/////////////////////////////////////////////////////////////////////////////////////////////
+// Store an image from the HTML side
+   image[0] = document.getElementById("texImage");
+   image[1] = document.getElementById("texImage2");
+
+ // Load the image with different mapping
+    configureTexturetri( 1 );
+    configureTexturetri( 0 );
+    
+// /////////////////////////////////////////////////////////////////////////
+// // Spheres Buffer Data
+// /////////////////////////////////////////////////////////////////////////
     for ( var m = 0; m < 2; m++) {
     // sets the planet complexity and whether it is flat shaded or not
         tetraorder[m];
@@ -384,6 +430,7 @@ window.onload = function init() {
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferArray[m]);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray[m]), gl.STATIC_DRAW);
     }
+
 
  //////////////////////////////////////////////////////////////////////////////////   
  // Link the variables
@@ -468,16 +515,14 @@ function render() {
     cameraLook = mat4();
     gl.uniformMatrix4fv(cameralookLoc, false, flatten(cameraLook) ); 
     
-
 // rotate head azimuth
     cameraMatrix = mat4();
    // cameraMatrix = mult(cameraMatrix, rotate(turn, vec3(0,1,0) ) );
     cameraMatrix = mult(cameraMatrix, translate (cameralr, cameraud, fwdback))
     cameraMatrix = mult(cameraMatrix, rotate(turn, vec3(0,1,0) ) );
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
-
-
-
+     
+////////////////////////////////////////////////////////////////////////////////////////
 // SMOOTH SPHERE
     //bind each buffer seperately and send to shader , send lighting params to shader
         bindandlighting(0);
@@ -496,6 +541,7 @@ function render() {
         smoothytrans = 10;
         smoothxtrans = getRandomInt(-10, 10);
     }
+///////////////////////////////////////////////////////////////////////////////////////////////
 // FLAT SPHERE
     //bind each buffer seperately and send to shader , send lighting params to shader
         bindandlighting(1);
@@ -515,16 +561,19 @@ function render() {
         flatxtrans = getRandomInt(-10, 10);
     }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
 //CUBE
  // set shaders to cube mode
-    gl.uniform1i( gl.getUniformLocation(program, "firstv"), 1 );
-    gl.uniform1i( gl.getUniformLocation(program, "firstf"), 1 );
+    enableCube(tBuffer[1], vBuffer1, 1);
 
+    modelViewMatrix = mat4();
+    modelViewMatrix = mult(modelViewMatrix, scale(2,2,2));
+    modelViewMatrix = mult(modelViewMatrix, translate(flatxtrans,flatytrans,0));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
 
-
-
-
-
+    // Draw the cube
+        gl.drawArrays( gl.TRIANGLES, 0, numVertices );
 
     window.requestAnimFrame(render);
 }
+

@@ -367,6 +367,18 @@ function rotate( angle, axis )
 
 //----------------------------------------------------------------------------
 
+function rotate2( angle )
+{
+    var result = mat2(
+        vec2( Math.cos(angle),   Math.sin(angle) ),
+        vec2( -Math.sin(angle),  Math.cos(angle) )
+    );
+
+    return result;
+}
+
+//----------------------------------------------------------------------------
+
 function scale( x, y, z )
 {
     if ( Array.isArray(x) && x.length == 3 ) {

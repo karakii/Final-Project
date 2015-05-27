@@ -13,19 +13,21 @@ uniform mat4 cameraMatrix;
 uniform mat4 cameraLook;
 
 //CUBES
-// varying vec2 fTexCoord;
-// uniform int firstv;
-// uniform mat2 cameraTexture;
+attribute  vec2 vTexCoord;
+varying vec2 fTexCoord;
+uniform int firstv;
+uniform mat2 cameraTexture;
 
 void main()
 {
 // // Texture CUBE
-//     if (firstv == 1) {
-//         fTexCoord =  cameraTexture * (vTexCoord - vec2( 0.5, 0.5));
-//         gl_Position = projectionMatrix * cameraMatrix * modelViewMatrix* vPosition;
-//     }
-    // else {
+    if (firstv == 1) {
+        fTexCoord =  (vTexCoord - vec2( 0.5, 0.5));
+        gl_Position = projectionMatrix * cameraMatrix * modelViewMatrix* vPosition;
+    }
+    else {
     // Spheres - Phong Shading
+        fTexCoord =vTexCoord;
         vec3 light;
         vec3 pos = (modelViewMatrix * vPosition).xyz;
         if(lightPosition.z == 0.0)  L = normalize(lightPosition.xyz);
@@ -34,7 +36,7 @@ void main()
         vec3 E =  -normalize(pos);
         N = normalize((modelViewMatrix * vNormal).xyz);      //use for smooth shading
         gl_Position = projectionMatrix* cameraMatrix *cameraLook * modelViewMatrix * vPosition;
-    // }
+     }
     
 }
 </script>
@@ -46,23 +48,22 @@ precision mediump float;
 uniform vec4 ambientProduct, diffuseProduct, specularProduct;
 uniform float shininess;
 varying vec3 N, L, E;
-uniform int suncheck; 
 varying vec4 fColor;
 
 //CUBE
-// varying  vec2 fTexCoord;
-// uniform int firstv;     //cube notifier for vertex
-// uniform sampler2D texture;
-// uniform float x;        // translate x 
-// uniform float y;
+varying  vec2 fTexCoord;
+uniform int firstf;     //cube notifier for vertex
+uniform sampler2D texture;
+uniform float x;        // translate x 
+uniform float y;
 void main()
 {    
-// // Texture Cube
-//     if (firstf == 1)
-//         gl_FragColor =  texture2D( texture, fTexCoord+ vec2( x, 0.5) );
+// Texture Cube
+    if (firstf == 1)
+        gl_FragColor =  texture2D( texture, fTexCoord+ vec2( x, 0.5) );
 
 //Sphere - Phong Shading
-    // else {
+     else {
         vec4 fColor;
     
         vec3 H = normalize( L + E );
@@ -79,7 +80,7 @@ void main()
         fColor = ambient + diffuse +specular;
         fColor.a = 1.0;
             gl_FragColor =  fColor;
-    // }
+    }
 }
 </script>
 
