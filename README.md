@@ -15,3 +15,4 @@ THINGS WE NEED TO DO:
 - collision detection
 - transparancy?
 - how we implement the 3d element (grid or rotation or both or something else?)
+- find texture maps ( used generic ones)
