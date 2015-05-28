@@ -6,7 +6,6 @@ THINGS DONE SO FAR:
 - -- objects just reset and start at top to make it continuous - need to change
 - platform movement in x and z ( modelspace movement)
 - world rotation to move around objects ( rotates world space - may need to modify to move modelspace instead)
-- 
 
 THINGS WE NEED TO DO:
 - iterations of objects ( if we stack we have to make it have multiple that exist, cant just reset)
