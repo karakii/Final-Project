@@ -1,10 +1,7 @@
-
-
 var canvas;
 var gl;
 var program; 
 var vPosition;
-
 ///////////////////////////////////////////////////////////
 //Buffer Array
 //////////////////////////////////////////////////////////
@@ -30,9 +27,15 @@ var aspect;
 
 var smoothytrans = 15;
 var smoothxtrans = -15; 
+var smoothztrans = -10; 
 
-var flatytrans = 20;
+var flatytrans = 10;// 20;
 var flatxtrans = -15; 
+var flatztrans = 5;         //bt -10 to 5
+
+var platformxtrans = 0;
+var platformytrans = -20;
+var platformztrans = 0;
 
 ////////////////////////////////////////////////////////////
 
@@ -444,6 +447,19 @@ window.onload = function init() {
 ///////////////////////////////////////////////////////////////////////////////
     window.addEventListener("keydown",function(event) {
         switch (event.keyCode) {
+            case 87:    //W
+                platformztrans -= 1;
+                break;
+            case 65:     // A
+                platformxtrans -= 1; 
+                break;
+            case 83:    //S
+                platformztrans += 1; 
+                break;
+            case 68:    //D
+                platformxtrans += 1;
+                break;
+
             case 74: //'j' left
                 cameralr = cameralr + (0.25 * Math.cos(Math.PI  * turn / 180.0));
                 fwdback = fwdback + (0.25*  Math.sin(Math.PI  * turn / 180.0));
@@ -467,12 +483,6 @@ window.onload = function init() {
             case 38: //down
                 cameraud += -0.25
                 break;
-            case 87: //wider  'w'
-                fovy += 1;
-                break;
-            case 78: //narrower 'n'
-                fovy += -1;
-                break;
             case 82: //reset 'r'
                 fwdback = 0;
                 cameralr = 0;
@@ -483,17 +493,11 @@ window.onload = function init() {
                 turn = 0;
                 break;
             case 37: // rotate left
-                turn -= 1;
+                turn -= 4;
                 break;
             case 39: //rotate right
-                turn += 1;
+                turn += 4;
                 break;
-            case 67: // c key , stick to green (2nd) planet
-                if (stick == 1)
-                    stick = 0;
-                else 
-                    stick = 1;   
-                break;       
         }
     });
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -535,34 +539,35 @@ function render() {
             gl.drawArrays( gl.TRIANGLES, i, 3 );
 
 // move down the screen
-    smoothytrans -= 0.1; 
+    // smoothytrans -= 0.1; 
 
-    if (smoothytrans <= -12) {
-        smoothytrans = 10;
-        smoothxtrans = getRandomInt(-10, 10);
-    }
+    // if (smoothytrans <= -12) {
+    //     smoothytrans = 10;
+    //     smoothxtrans = getRandomInt(-10, 10);
+    // }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // FLAT SPHERE
     //bind each buffer seperately and send to shader , send lighting params to shader
         bindandlighting(1);
     // move each object to the correct place in space
         modelViewMatrix = mat4();
-        modelViewMatrix = mult(modelViewMatrix, translate(flatxtrans,flatytrans,0));
+        modelViewMatrix = mult(modelViewMatrix, translate(flatxtrans,flatytrans,flatztrans));
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
     // Draw the spheres
         for( var i=0; i<indexs[1]; i+=3) 
             gl.drawArrays( gl.TRIANGLES, i, 3 );
 
-// move down the screen
-    flatytrans -= 0.1; 
+// // move down the screen
+//     flatytrans -= 0.1; 
 
-    if (flatytrans <= -12) {
-        flatytrans = 10;
-        flatxtrans = getRandomInt(-10, 10);
-    }
+//     if (flatytrans <= -12) {
+//         flatytrans = 10;
+//         flatztrans = getRandomInt(-10, 5);
+//         flatxtrans = getRandomInt(-10, 10);
+//     }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-//CUBE
+// CUBE
  // set shaders to cube mode
     enableCube(tBuffer[1], vBuffer1, 1);
 
@@ -572,7 +577,15 @@ function render() {
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
 
     // Draw the cube
-        gl.drawArrays( gl.TRIANGLES, 0, numVertices );
+    gl.drawArrays( gl.TRIANGLES, 0, numVertices );
+/////////////////////////////////////////////////////////////////////////////////////////////////\
+// PLATFORM
+    modelViewMatrix = mat4();
+    modelViewMatrix = mult(modelViewMatrix, scale(6,1/2,4));
+    modelViewMatrix = mult(modelViewMatrix, translate( platformxtrans, platformytrans, platformztrans));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
+    gl.drawArrays( gl.TRIANGLES, 0, numVertices );
+
 
     window.requestAnimFrame(render);
 }
