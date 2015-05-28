@@ -673,3 +673,44 @@ var sizeof = {
     'mat3' : new Float32Array( flatten(mat3()) ).byteLength,
     'mat4' : new Float32Array( flatten(mat4()) ).byteLength
 };
+
+function inverse( m ) 
+{
+if ( !m.matrix ) { throw "attempt to invert non matrix"; }
+
+var result = mat4();
+var n11 = m[ 0 ][ 0 ], n12 = m[ 0 ][ 1 ], n13 = m[ 0 ][ 2 ], n14 = m[ 0 ][ 3 ]
+var n21 = m[ 1 ][ 0 ], n22 = m[ 1 ][ 1 ], n23 = m[ 1 ][ 2 ], n24 = m[ 1 ][ 3 ];
+var n31 = m[ 2 ][ 0 ], n32 = m[ 2 ][ 1 ], n33 = m[ 2 ][ 2 ], n34 = m[ 2 ][ 3 ];
+var n41 = m[ 3 ][ 0 ], n42 = m[ 3 ][ 1 ], n43 = m[ 3 ][ 2 ], n44 = m[ 3 ][ 3 ];
+result[ 0 ][ 0 ] = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 + n22 * n33 * n44;
+result[ 0 ][ 1 ] = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 - n12 * n33 * n44;
+result[ 0 ][ 2 ] = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 + n12 * n23 * n44;
+result[ 0 ][ 3 ] = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 - n12 * n23 * n34;
+result[ 1 ][ 0 ] = n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 - n21 * n33 * n44;
+result[ 1 ][ 1 ] = n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 + n11 * n33 * n44;
+result[ 1 ][ 2 ] = n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 - n11 * n23 * n44;
+result[ 1 ][ 3 ] = n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 + n11 * n23 * n34;
+result[ 2 ][ 0 ] = n22 * n34 * n41 - n24 * n32 * n41 + n24 * n31 * n42 - n21 * n34 * n42 - n22 * n31 * n44 + n21 * n32 * n44;
+result[ 2 ][ 1 ] = n14 * n32 * n41 - n12 * n34 * n41 - n14 * n31 * n42 + n11 * n34 * n42 + n12 * n31 * n44 - n11 * n32 * n44;
+result[ 2 ][ 2 ] = n12 * n24 * n41 - n14 * n22 * n41 + n14 * n21 * n42 - n11 * n24 * n42 - n12 * n21 * n44 + n11 * n22 * n44;
+result[ 2 ][ 3 ] = n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 - n11 * n22 * n34;
+result[ 3 ][ 0 ] = n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 - n21 * n32 * n43;
+result[ 3 ][ 1 ] = n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 + n11 * n32 * n43;
+result[ 3 ][ 2 ] = n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 - n11 * n22 * n43;
+result[ 3 ][ 3 ] = n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33;
+var one_over_determinant = 1.0 / (n11 * result[ 0 ][ 0 ] + n21 * result[ 0 ][ 1 ] + n31 * result[ 0 ][ 2 ] + n41 * result[ 0 ][ 3 ] );
+return mult (result, mat4( one_over_determinant ) );
+};
+
+function mult_vec(M, v)
+{
+v_4 = v.length == 4 ? v : vec4( v, 0 ); 
+
+v_new = vec4();
+v_new[0] = dot( M[0], v_4 );
+v_new[1] = dot( M[1], v_4 );
+v_new[2] = dot( M[2], v_4 );
+v_new[3] = dot( M[3], v_4 );
+return v_new;
+}

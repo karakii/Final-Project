@@ -10,7 +10,6 @@ uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform vec4 lightPosition;
 uniform mat4 cameraMatrix;
-uniform mat4 cameraLook;
 
 //CUBES
 attribute  vec2 vTexCoord;
@@ -35,7 +34,7 @@ void main()
 
         vec3 E =  -normalize(pos);
         N = normalize((modelViewMatrix * vNormal).xyz);      //use for smooth shading
-        gl_Position = projectionMatrix* cameraMatrix *cameraLook * modelViewMatrix * vPosition;
+        gl_Position = projectionMatrix* cameraMatrix * modelViewMatrix * vPosition;
      }
     
 }

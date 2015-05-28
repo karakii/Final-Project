@@ -6,11 +6,13 @@ var vPosition;
 //Buffer Array
 //////////////////////////////////////////////////////////
 // Sphere
+// update these for however many spheres you're going to make
 var pointsArray = [[],[],[],[],[],[]];
 var normalsArray = [[],[],[],[],[],[]];
+var indexs = [0,0,0,0,0,0];
 var nBufferArray = [];
 var vBufferArray = [];
-var indexs = [0,0,0,0,0,0];
+
 ////////////////////////////////////////////////////////////
 // Movement Variables 
 /////////////////////////////////////////////////////////////
@@ -26,15 +28,19 @@ var count = 0;
 var aspect;
 
 var smoothytrans = 15;
-var smoothxtrans = -15; 
-var smoothztrans = -10; 
+var smoothxtrans = 3; 
+var smoothztrans = 0; 
 
 var flatytrans = 10;// 20;
-var flatxtrans = -15; 
-var flatztrans = 5;         //bt -10 to 5
+var flatxtrans = 0; 
+var flatztrans = 0;         //bt -10 to 5
+
+var cubextrans = 8;
+var cubeytrans = 0;
+var cubeztrans =0;
 
 var platformxtrans = 0;
-var platformytrans = -20;
+var platformytrans = 0;
 var platformztrans = 0;
 
 ////////////////////////////////////////////////////////////
@@ -170,11 +176,7 @@ var materialspec = [
 var materialshin =[
     1,
     10
-];
-
-// Function takes care of the lighting effects for each planet as well as binding the buffers to the shaders
-
-        
+];  
 
 /////////////////////////////////////////////////////////////////////////////////////
 //Size and Location Helpers
@@ -213,21 +215,13 @@ var inversescale= [
     scale (1/0.25, 1/0.25, 1/0.25)
 ];
 
-var rotatespheres = [
-  //  0, 0, 15 ,30, 40, 25
-    0 , 0, 0, 0, 0, 0
-];
-
-var rotateadd = [
-    0, 0.5, 0.4, 0.7, 0.45, 4
-];
 ///////////////////////////////////////////////////////////////////////////////
 //Sphere Generation
 /////////////////////////////////////////////////////////////////////////////////
-var va = vec4(0.0, 0.0, -1.0,1);
-var vb = vec4(0.0, 0.942809, 0.333333, 1);
-var vc = vec4(-0.816497, -0.471405, 0.333333, 1);
-var vd = vec4(0.816497, -0.471405, 0.333333,1);
+var va = vec4(0.0, 0.0, -1.0, 1.0);
+var vb = vec4(0.0, 0.942809, 0.333333, 1.0);
+var vc = vec4(-0.816497, -0.471405, 0.333333, 1.0);
+var vd = vec4(0.816497, -0.471405, 0.333333,1.0);
 
 // For flat shaded sphere - has one normal per triangle
 function triangleflat(a, b, c , m) {
@@ -300,13 +294,13 @@ function tetrahedron(a, b, c, d, n, flat, m) {
 }
 
 // sets the order for constructing each object in space
+// update the amount of pointsarray, indexs, normalsarray
 var tetraorder = [
-    tetrahedron(va, vb, vc, vd, 3, 2, 0),         // SUn
-    tetrahedron(va, vb, vc, vd, 3, 1, 1)         //ICY WHITE, MED/LOW , FLAT
- //    tetrahedron(va, vb, vc, vd, 2, 0, 2),         // GREEN, MED/LOW, GOURAD
- //    tetrahedron(va, vb, vc, vd, 3, 0, 3),         //WATER, HIGH, PHONG
- //    tetrahedron(va, vb, vc, vd, 3, 0, 4),         // ORANGE, MED/HIGH, NO SPEC
- // //   tetrahedron(va, vb, vc, vd, 1, 0, 5)         //MOON - dont need. just use another planets sphere
+    tetrahedron(va, vb, vc, vd, 3, 0, 0),         //0   smooth sphere
+    tetrahedron(va, vb, vc, vd, 3, 1, 1),         //1   flat sphere
+// Bounding volumes
+     tetrahedron(va, vb, vc, vd, 1, 0, 2)          //2 collision detection sphere // makes around 0-47 indexs[2]
+
 ];
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -440,7 +434,6 @@ window.onload = function init() {
     modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
     projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
     cameraMatrixLoc = gl.getUniformLocation( program, "cameraMatrix");
-    cameralookLoc = gl.getUniformLocation (program,"cameraLook");
 
 ////////////////////////////////////////////////////////////////////////////////
 //event listeners for buttons
@@ -506,6 +499,19 @@ window.onload = function init() {
 }
 
 function render() {
+/////////////////////////////////////////////////////////////
+// Object Transforms 
+///////////////////////////////////////////////////////////////////
+    var modelViewTransforms = [
+    translate(smoothxtrans,smoothytrans,0),      //smooth sphere
+    translate(flatxtrans,flatytrans,0),          //flat sphere
+    translate(cubextrans,cubeytrans,cubeztrans),            // textured cube
+    translate( platformxtrans, platformytrans, platformztrans)  //platform
+   // mult(scale(2,2,2),translate(flatxtrans,flatytrans,0)), // textured cube
+   // mult(scale(6,1/2,4),translate( platformxtrans, platformytrans, platformztrans)) // platform
+];
+////////////////////////////////////////////////////////////////////
+// clear the canvas
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 //////////////////////////////////////////////////////////////////////////////////////
 // set up the projection 
@@ -516,55 +522,93 @@ function render() {
 ///////////////////////////////////////////////////////////////////////////////////////
 // Set up the camera for attaching to the green planet and moving in space
 /////////////////////////////////////////////////////////////////////////////////////
-    cameraLook = mat4();
-    gl.uniformMatrix4fv(cameralookLoc, false, flatten(cameraLook) ); 
-    
 // rotate head azimuth
     cameraMatrix = mat4();
-   // cameraMatrix = mult(cameraMatrix, rotate(turn, vec3(0,1,0) ) );
-    cameraMatrix = mult(cameraMatrix, translate (cameralr, cameraud, fwdback))
+    cameraMatrix = mult(cameraMatrix, translate (cameralr, cameraud, fwdback));
     cameraMatrix = mult(cameraMatrix, rotate(turn, vec3(0,1,0) ) );
     gl.uniformMatrix4fv(cameraMatrixLoc, false, flatten(cameraMatrix) );
-     
+
+////////////////////////////////////////////////////////////////////////////////
+// check for collisions using the bounding spheres
+//////////////////////////////////////////////////////////////////////////////
+//var T = inverse(modelViewTransforms[3]);
+//four transform objects 
+// find out what is wrong with modifiedspherepoint
+            // var arraypoint = pointsArray[4];
+            // var modifiedspherepoint = mult_vec(mat4(), va);
+            //    // platformxtrans -= 0.01;
+            // //collision if smaller than 1 (unit sphere)
+            //     if (modifiedspherepoint[0]* modifiedspherepoint[0] +
+            //         modifiedspherepoint[1]* modifiedspherepoint[1] +
+            //         modifiedspherepoint[2]* modifiedspherepoint[2] < 2) {
+            //     // COLLISION
+            //     platformxtrans -= 0.01;
+            // }
+ platformxtrans = 0;
+//     // check every object that is not the same object
+for (var u = 0 ; u < 4; u++) {    
+    for (var q = 0; q < 4 ; q++) {
+        if (q == u) {}
+        else {
+        //multiply by the inverse of the transform
+           var T = mult (inverse(modelViewTransforms[u]),modelViewTransforms[q]);
+            for (var h = 0; h < indexs[2]; h++) {
+                var arraypoint = pointsArray[2];
+                var modifiedspherepoint =  mult_vec(T, arraypoint[h]);
+            //collision if smaller than 2, bigger area
+                if (modifiedspherepoint[0]* modifiedspherepoint[0] +
+                    modifiedspherepoint[1]* modifiedspherepoint[1] +
+                    modifiedspherepoint[2]* modifiedspherepoint[2] < 1) {
+                // COLLISION -- implement some kind of physics or something
+                    platformxtrans -= 0.01;
+                    
+                }
+            }
+
+        }
+    }
+}
 ////////////////////////////////////////////////////////////////////////////////////////
 // SMOOTH SPHERE
     //bind each buffer seperately and send to shader , send lighting params to shader
         bindandlighting(0);
     // move each object to the correct place in space
         modelViewMatrix = mat4();
-        modelViewMatrix = mult(modelViewMatrix, translate(smoothxtrans,smoothytrans,0));
+        modelViewMatrix = mult(modelViewMatrix, modelViewTransforms[0]);
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
     // Draw the spheres
         for( var i=0; i<indexs[0]; i+=3) 
             gl.drawArrays( gl.TRIANGLES, i, 3 );
 
 // move down the screen
-    // smoothytrans -= 0.1; 
+     smoothytrans -= 0.1; 
 
-    // if (smoothytrans <= -12) {
-    //     smoothytrans = 10;
-    //     smoothxtrans = getRandomInt(-10, 10);
-    // }
+    if (smoothytrans <= -12) {
+        smoothytrans = 10;
+        smoothxtrans = 8;
+        //smoothxtrans = getRandomInt(-10, 10);
+    }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // FLAT SPHERE
     //bind each buffer seperately and send to shader , send lighting params to shader
         bindandlighting(1);
     // move each object to the correct place in space
         modelViewMatrix = mat4();
-        modelViewMatrix = mult(modelViewMatrix, translate(flatxtrans,flatytrans,flatztrans));
+        modelViewMatrix = mult(modelViewMatrix, modelViewTransforms[1]);
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
     // Draw the spheres
         for( var i=0; i<indexs[1]; i+=3) 
             gl.drawArrays( gl.TRIANGLES, i, 3 );
 
-// // move down the screen
-//     flatytrans -= 0.1; 
+// move down the screen
+    flatytrans -= 0.1; 
 
-//     if (flatytrans <= -12) {
-//         flatytrans = 10;
-//         flatztrans = getRandomInt(-10, 5);
-//         flatxtrans = getRandomInt(-10, 10);
-//     }
+    // if (flatytrans <= -12) {
+    //     flatytrans = 10;
+    //     flatxtrans = 0;
+    //  //   flatztrans = getRandomInt(-10, 5);
+    //  //   flatxtrans = getRandomInt(-10, 10);
+    // }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // CUBE
@@ -572,21 +616,26 @@ function render() {
     enableCube(tBuffer[1], vBuffer1, 1);
 
     modelViewMatrix = mat4();
-    modelViewMatrix = mult(modelViewMatrix, scale(2,2,2));
-    modelViewMatrix = mult(modelViewMatrix, translate(flatxtrans,flatytrans,0));
+    modelViewMatrix = mult(modelViewMatrix, modelViewTransforms[2] );
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
-
     // Draw the cube
     gl.drawArrays( gl.TRIANGLES, 0, numVertices );
+
+    cubeytrans -= 0.2;
+    if (cubeytrans <= -12) {
+        cubeytrans = 10;
+        cubextrans = 8;
+     //   flatztrans = getRandomInt(-10, 5);
+     //   flatxtrans = getRandomInt(-10, 10);
+    }
+
 /////////////////////////////////////////////////////////////////////////////////////////////////\
 // PLATFORM
     modelViewMatrix = mat4();
-    modelViewMatrix = mult(modelViewMatrix, scale(6,1/2,4));
-    modelViewMatrix = mult(modelViewMatrix, translate( platformxtrans, platformytrans, platformztrans));
+    modelViewMatrix = mult(modelViewMatrix, modelViewTransforms[3]);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix) );
     gl.drawArrays( gl.TRIANGLES, 0, numVertices );
 
 
     window.requestAnimFrame(render);
 }
-
